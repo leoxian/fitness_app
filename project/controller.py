@@ -84,11 +84,16 @@ def Show_Last_Time_Workout():
 @app.route('/show_a_new_workout')
 def Show_A_New_Workout():
     ##在这里会展示一次新的锻炼计划
-    #exercise_list=['胸','背','肩','手臂']
+    exercise_list=['胸','背','肩','手臂']
     time=Record.query.order_by(Record.act_time.desc()).first()
     times =str(time.act_time).replace('00:00:00','')
     temp = Regions.query.join(Action, Regions.id == Action.region_id).join(Record,Action.id == Record.action_id).filter(Record.act_time == times).all()
-    print(temp)
+    p = exercise_list.index(temp[0].name)
+    if(p<len(exercise_list)-1):
+        p=p+1
+    else:
+        p=0
+    print(p)
 
     return 'hello world'
 
@@ -107,3 +112,7 @@ def Show_A_New_Workout():
 if __name__ == '__main__': 
     app.run()
 
+
+##to-do
+
+def exercise_temp():
