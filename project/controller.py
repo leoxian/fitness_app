@@ -27,7 +27,7 @@ class Action(db.Model):
     __tablename__ ='action'
     id = db.Column('id',db.Integer,primary_key=True)
     name = db.Column('name',db.String(32))
-    region_id =db.Column('region_id',db.Integer)
+    region_id =db.Column('region_id',db.Integer,db.ForeignKey('Regions.id'))
 
     def __repr__(self):
         print(self.name)
@@ -40,7 +40,7 @@ class Record(db.Model):
     id = db.Column('id',db.Integer,primary_key=True)
     plan_time=db.Column('plan_time',db.String(32))
     act_time=db.Column('act_time',db.String(32))
-    action_id=db.Column('action_id',db.Integer)
+    action_id=db.Column('action_id',db.Integer,db.ForeignKey('Action.id'))
     quantity=db.Column('quantity',db.Integer)
     weight=db.Column('weight',db.Integer)
 
@@ -84,8 +84,10 @@ def Show_Last_Time_Workout():
 def Show_A_New_Workout():
     ##在这里会展示一次新的锻炼计划
     #exercise_list=['胸','背','肩','手臂']
-    sql = 'select * from region join action on region.id==action.region_id join record region_id ==action_id'
+    time=Record.query.order_by(Record.act_time.desc()).first()
+    times =str(time.act_time).replace('00:00:00','')
     
+    temp = Record.query.join(Action, Action.id == Record.action_id).filter(Record.act_time == times).join(Regions,Regions.id == Action.region_id).all()
 
     return ''
 
