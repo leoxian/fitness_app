@@ -87,12 +87,15 @@ def Show_A_New_Workout():
     exercise_list=['胸','背','肩','手臂']
     time=Record.query.order_by(Record.act_time.desc()).first()
     times =str(time.act_time).replace('00:00:00','')
-    temp = Regions.query.join(Action, Regions.id == Action.region_id).join(Record,Action.id == Record.action_id).filter(Record.act_time == times).all()
-    p = exercise_list.index(temp[0].name)
+    last_workout = Regions.query.join(Action, Regions.id == Action.region_id).join(Record,Action.id == Record.action_id).filter(Record.act_time == times).all()
+    p = exercise_list.index(last_workout[0].name)
     if(p<len(exercise_list)-1):
         p=p+1
     else:
         p=0
+    today_workout = Action.query.join(Regions, Action.region_id == Regions.id).filter(Regions.name==exercise_list[p]).all()
+    for i in today_workout:
+        print(i.name)
     print(p)
 
     return 'hello world'
@@ -115,4 +118,4 @@ if __name__ == '__main__':
 
 ##to-do
 
-def exercise_temp():
+#def exercise_temp():
