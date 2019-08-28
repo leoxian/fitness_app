@@ -17,6 +17,11 @@ class Regions(db.Model):
     id = db.Column('id',db.Integer,primary_key=True)
     name =db.Column('name',db.String(32))
 
+
+    def __init__(self,id,name)
+        self.id = id
+        self.name = name
+
     def __repr__(self):
         #print(self.name)
         return '<Regin %r>'%self.name
@@ -29,9 +34,16 @@ class Action(db.Model):
     name = db.Column('name',db.String(32))
     region_id =db.Column('region_id',db.Integer,db.ForeignKey('regions.id'))
 
+    def __init__(self,id,name,region_id)
+        self.id = id
+        self.name = name
+        self.region_id = region_id
+
+
     def __repr__(self):
         print(self.name)
         return '<Action %r>'%self.name
+
 
 
 #记录
@@ -44,6 +56,14 @@ class Record(db.Model):
     action_id=db.Column('action_id',db.Integer,db.ForeignKey('action.id'))
     quantity=db.Column('quantity',db.Integer)
     weight=db.Column('weight',db.Integer)
+
+
+    def __init__(self,id,plan_time,act_time,action_id,quantity,weight)
+        self.id = id
+        self.plan_time = plan_time
+        self.act_time = act_time
+        self.action_id = action_id
+        self.weight = weight
 
     def __repr__(self):
         #print(self.plan_time)
@@ -83,7 +103,7 @@ def Show_Last_Time_Workout():
 
 @app.route('/show_a_new_workout')
 def Show_A_New_Workout():
-    ##在这里会展示一次新的锻炼计划
+    ##在这里会展示一次新的锻炼
     exercise_list=['胸','背','肩','手臂']
     time=Record.query.order_by(Record.act_time.desc()).first()
     times =str(time.act_time).replace('00:00:00','')
@@ -94,28 +114,48 @@ def Show_A_New_Workout():
     else:
         p=0
     today_workout = Action.query.join(Regions, Action.region_id == Regions.id).filter(Regions.name==exercise_list[p]).all()
-    for i in today_workout:
-        print(i.name)
-    print(p)
+    ###存在问题
+    today_workout_number= Records.query.join(Action,Records.action_id == Action.id).filter(Record.act_time == times).all()
 
+    exercise_temp(exercise_list[p],today_workout,today_workout_number)
     return 'hello world'
 
 
-# @app.route('./save_workout_data')
-# def Save_Workout_Data():
+@app.route('./save_workout_data',method=['POST'])
+def Save_Workout_Data():
 #     ##保存此次锻炼结果
-#     return ''
+    temp = request.get_data()
+    temps = json.loads(temp)
+
+    ##组成新对象进行保存
+    for i in temps['action_name']:
+        #for h in i:
 
 
-# def connect_db():
-#     ##连接数据库
+
+
+
+
+
+
+
+
+
+    return ''
+
+
 
 
 
 if __name__ == '__main__': 
     app.run()
 
-
-##to-do
-
-#def exercise_temp():
+def exercise_temp(Region_name,Action,Action_number):
+    result_json={'region_name':Region_name,'action_name':{}}
+    for i in Action:
+        result_json['action_name'][i.name]=[]
+        for h in Action_number:
+            if h.action_id ==i.id:
+                result_json['action_name'][i.name].append(h)
+            break
+    return result_json
