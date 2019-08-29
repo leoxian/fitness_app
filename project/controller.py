@@ -1,9 +1,12 @@
 
 from flask import Flask
 from datetime import datetime
-#from tables import Regions
 from flask_sqlalchemy import SQLAlchemy
+from api.api import exercise_temp
+from flask import jsonify
+import pickle
 import json
+
 
 app = Flask(__name__)
 #app.config['SECRET_KEY']='a19830614'
@@ -17,8 +20,7 @@ class Regions(db.Model):
     id = db.Column('id',db.Integer,primary_key=True)
     name =db.Column('name',db.String(32))
 
-
-    def __init__(self,id,name)
+    def __init__(self,id,name):
         self.id = id
         self.name = name
 
@@ -34,7 +36,7 @@ class Action(db.Model):
     name = db.Column('name',db.String(32))
     region_id =db.Column('region_id',db.Integer,db.ForeignKey('regions.id'))
 
-    def __init__(self,id,name,region_id)
+    def __init__(self,id,name,region_id):
         self.id = id
         self.name = name
         self.region_id = region_id
@@ -58,7 +60,7 @@ class Record(db.Model):
     weight=db.Column('weight',db.Integer)
 
 
-    def __init__(self,id,plan_time,act_time,action_id,quantity,weight)
+    def __init__(self,id,plan_time,act_time,action_id,quantity,weight):
         self.id = id
         self.plan_time = plan_time
         self.act_time = act_time
@@ -95,9 +97,10 @@ def Show_Last_Time_Workout():
         for h in workout_time_list:
             if h.action_id ==i.id:
                 print(h)
-                result_json['action_name'][i.name].append(h)
-    print(result_json)
-    return 'hello world'
+                result_json['action_name'][i.name].append([h.plan_time,h.act_time,h.action_id,h.weight])
+    result={}
+    result['data']=result_json
+    return jsonify(result)
     #return json.dumps(result_json,ensure_ascii=False)
 
 
@@ -115,20 +118,20 @@ def Show_A_New_Workout():
         p=0
     today_workout = Action.query.join(Regions, Action.region_id == Regions.id).filter(Regions.name==exercise_list[p]).all()
     ###存在问题
-    today_workout_number= Records.query.join(Action,Records.action_id == Action.id).filter(Record.act_time == times).all()
+    today_workout_number= Record.query.join(Action,Record.action_id == Action.id).filter(Record.act_time == times).all()
+    result ={}
+    result['data']= exercise_temp(exercise_list[p],today_workout,today_workout_number)
+    return jsonify(result)
 
-    exercise_temp(exercise_list[p],today_workout,today_workout_number)
-    return 'hello world'
 
-
-@app.route('./save_workout_data',method=['POST'])
-def Save_Workout_Data():
+#@app.route('./save_workout_data',method=['POST'])
+#def Save_Workout_Data():
 #     ##保存此次锻炼结果
-    temp = request.get_data()
-    temps = json.loads(temp)
+    #temp = request.get_data()
+    #temps = json.loads(temp)
 
     ##组成新对象进行保存
-    for i in temps['action_name']:
+    #for i in temps['action_name']:
         #for h in i:
 
 
@@ -147,15 +150,8 @@ def Save_Workout_Data():
 
 
 
+
+
+
 if __name__ == '__main__': 
     app.run()
-
-def exercise_temp(Region_name,Action,Action_number):
-    result_json={'region_name':Region_name,'action_name':{}}
-    for i in Action:
-        result_json['action_name'][i.name]=[]
-        for h in Action_number:
-            if h.action_id ==i.id:
-                result_json['action_name'][i.name].append(h)
-            break
-    return result_json
