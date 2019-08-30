@@ -1,9 +1,8 @@
 
-from flask import Flask
+from flask import Flask,jsonify,request
 from datetime import datetime
 from flask_sqlalchemy import SQLAlchemy
 from api.api import exercise_temp
-from flask import jsonify
 import pickle
 import json
 
@@ -60,11 +59,11 @@ class Record(db.Model):
     weight=db.Column('weight',db.Integer)
 
 
-    def __init__(self,id,plan_time,act_time,action_id,quantity,weight):
-        self.id = id
+    def __init__(self,plan_time,act_time,action_id,quantity,weight):
         self.plan_time = plan_time
         self.act_time = act_time
         self.action_id = action_id
+        self.quantity = quantity
         self.weight = weight
 
     def __repr__(self):
@@ -123,28 +122,21 @@ def Show_A_New_Workout():
     result['data']= exercise_temp(exercise_list[p],today_workout,today_workout_number)
     return jsonify(result)
 
-
-#@app.route('./save_workout_data',method=['POST'])
-#def Save_Workout_Data():
-#     ##保存此次锻炼结果
-    #temp = request.get_data()
-    #temps = json.loads(temp)
-
-    ##组成新对象进行保存
-    #for i in temps['action_name']:
-        #for h in i:
-
-
-
-
-
-
-
-
-
-
-
-    return ''
+##处理
+@app.route('./save_workout_data',method=['POST'])
+def Save_Workout_Data():
+    ##保存此次锻炼结果
+    temp = request.get_data()
+    temps = json.loads(temp)
+    #组成新对象进行保存
+    for temps.key,temps.value in temps['action_name'].items():
+            action =Action.query.filter(Action.action_name == temps.key).all()
+            for l in temps.value:
+                temp=Record(l.plan_time,l.act_time,action.id,l.quantity,l.weight)
+                db.session.add(temp)
+    db.session.commit()
+    db.session.close()
+    return 'success'
 
 
 
