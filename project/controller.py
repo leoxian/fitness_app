@@ -1,74 +1,10 @@
 
 from flask import Flask,jsonify,request
 from datetime import datetime
-from flask_sqlalchemy import SQLAlchemy
 from api.api import exercise_temp
+from model.model import *
 import pickle
 import json
-
-
-app = Flask(__name__)
-#app.config['SECRET_KEY']='a19830614'
-app.config['SQLALCHEMY_DATABASE_URI']='mysql+pymysql://root:a19830614@120.55.60.84:3306/fitness' 
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS']=True
-db =SQLAlchemy(app)
-
-##部位
-class Regions(db.Model):
-    __tablename__ = 'region'
-    id = db.Column('id',db.Integer,primary_key=True)
-    name =db.Column('name',db.String(32))
-
-    def __init__(self,id,name):
-        self.id = id
-        self.name = name
-
-    def __repr__(self):
-        #print(self.name)
-        return '<Regin %r>'%self.name
-
-##动作
-
-class Action(db.Model):
-    __tablename__ ='action'
-    id = db.Column('id',db.Integer,primary_key=True)
-    name = db.Column('name',db.String(32))
-    region_id =db.Column('region_id',db.Integer,db.ForeignKey('regions.id'))
-
-    def __init__(self,id,name,region_id):
-        self.id = id
-        self.name = name
-        self.region_id = region_id
-
-
-    def __repr__(self):
-        print(self.name)
-        return '<Action %r>'%self.name
-
-
-
-#记录
-class Record(db.Model):
-    __tablename__ ='record'
-    id = db.Column('id',db.Integer,primary_key=True)
-    plan_time=db.Column('plan_time',db.String(32))
-    act_time=db.Column('act_time',db.String(32))
-    #table名字
-    action_id=db.Column('action_id',db.Integer,db.ForeignKey('action.id'))
-    quantity=db.Column('quantity',db.Integer)
-    weight=db.Column('weight',db.Integer)
-
-
-    def __init__(self,plan_time,act_time,action_id,quantity,weight):
-        self.plan_time = plan_time
-        self.act_time = act_time
-        self.action_id = action_id
-        self.quantity = quantity
-        self.weight = weight
-
-    def __repr__(self):
-        #print(self.plan_time)
-        return '<Record %r>'%self.action_id
 
 
 @app.route('/')
@@ -76,9 +12,11 @@ def Show_Last_Time_Workout():
     ##在这里会展示上一次的锻炼数据
     #查询最后一次锻炼的时间
     time=Record.query.order_by(Record.act_time.desc()).first()
+
     #print(str(time.act_time).replace('00:00:00',''))
     #查询最后一次锻炼时间的记录
     times =str(time.act_time).replace('00:00:00','')
+    print(times)
     workout_time_list=Record.query.filter(Record.act_time==times).all()
     #根据最后一次锻炼时间的action_id查出相应的action
     temp_set=set()
@@ -103,12 +41,13 @@ def Show_Last_Time_Workout():
     #return json.dumps(result_json,ensure_ascii=False)
 
 
-@app.route('/show_a_new_workout')
+@app.route('/show_a_new_workout',methods=['GET'])
 def Show_A_New_Workout():
     ##在这里会展示一次新的锻炼
     exercise_list=['胸','背','肩','手臂']
     time=Record.query.order_by(Record.act_time.desc()).first()
     times =str(time.act_time).replace('00:00:00','')
+    print(times)
     last_workout = Regions.query.join(Action, Regions.id == Action.region_id).join(Record,Action.id == Record.action_id).filter(Record.act_time == times).all()
     p = exercise_list.index(last_workout[0].name)
     if(p<len(exercise_list)-1):
@@ -118,29 +57,28 @@ def Show_A_New_Workout():
     today_workout = Action.query.join(Regions, Action.region_id == Regions.id).filter(Regions.name==exercise_list[p]).all()
     ###存在问题
     today_workout_number= Record.query.join(Action,Record.action_id == Action.id).filter(Record.act_time == times).all()
+    ##exercise_list[p]:用于说明今天需要锻炼的部位
+    ##today_workout:锻炼动作
+    ##today_workout_number:锻炼动作的次数
     result ={}
     result['data']= exercise_temp(exercise_list[p],today_workout,today_workout_number)
     return jsonify(result)
 
 ##处理
-@app.route('./save_workout_data',method=['POST'])
+@app.route('/save_workout_data',methods=['POST'])
 def Save_Workout_Data():
     ##保存此次锻炼结果
-    temp = request.get_data()
-    temps = json.loads(temp)
+    temps = request.get_json()
+    print(temps)
     #组成新对象进行保存
-    for temps.key,temps.value in temps['action_name'].items():
-            action =Action.query.filter(Action.action_name == temps.key).all()
-            for l in temps.value:
-                temp=Record(l.plan_time,l.act_time,action.id,l.quantity,l.weight)
+    for key,value in temps['action_name'].items():
+            action =Action.query.filter(Action.name == key).all()
+            for l in value:
+                temp=Record(l[0],l[1],action[0].id,l[2],l[3])
                 db.session.add(temp)
     db.session.commit()
     db.session.close()
-    return 'success'
-
-
-
-
+    return 'success to save a workout'
 
 
 
